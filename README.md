@@ -50,16 +50,22 @@
 
 ## 下载使用
 
-**macOS（Apple Silicon，M 系列）**：直接下这个，不用登录、不用编译
+**macOS（Apple Silicon）**：直接下这个，不用登录、不用编译
 
 ```
 https://github.com/lijihang17732808295/qingfeng-pptbox/releases/latest/download/PPTToolbox-v1.07-macOS-arm64.zip
 ```
 
+适用于所有 ARM64 的 Mac：M1/M2/M3/M4 系列，以及 **A18 Pro 的 MacBook Neo**（同为 ARM64，原生运行，不需 Rosetta）。
+
 解压后把「PPT工具箱.app」拖进「应用程序」即可。
 
-- 首次打开若提示「无法验证开发者」→ 右键 → 打开（只需一次）
-- 或执行：`xattr -dr com.apple.quarantine /Applications/PPT工具箱.app`
+**首次打开被系统拦住**（ad-hoc 签名 + 下载隔离，macOS 15 起行为有变）：
+
+- macOS **Sequoia 15 / Tahoe 26 及以后**：双击 → 提示被拦 → 打开「系统设置 → 隐私与安全性」→
+  下方「安全性」区点 **「仍要打开」** → 输密码或用 Touch ID → 再点「打开」。
+  （旧的「右键 → 打开」从 15 起已失效；「仍要打开」按钮只在被拦后约 1 小时内出现，没看到就重新双击一次 App）
+- 或一行命令绕过：`xattr -dr com.apple.quarantine /Applications/PPT工具箱.app`
 - 首次用「页面图片化」或「自动保存」会弹「想要控制 Microsoft PowerPoint」，点**好**
 - 请用 **Finder 双击解压**（Archive Utility）。个别第三方解压工具会把「工具箱」三个字显示成乱码，
   这时把 `.app` 改个名字照样能运行，不影响功能

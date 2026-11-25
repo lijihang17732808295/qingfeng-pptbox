@@ -119,10 +119,15 @@ jobs:
           set -euo pipefail
           gh release create "$GITHUB_REF_NAME" out/*.zip \
             --title "$GITHUB_REF_NAME" \
-            --notes "macOS 版安装包，适用于所有 Apple Silicon MacBook（M1 及以后）。
+            --notes "macOS 版安装包，适用于所有 ARM64 的 Mac：M1/M2/M3/M4 系列，以及 A18 Pro 的 MacBook Neo。
 
-          解压后把「PPT工具箱.app」拖进「应用程序」。首次打开若提示「无法验证开发者」，
-          右键 → 打开；或执行 \`xattr -dr com.apple.quarantine /Applications/PPT工具箱.app\`。
+          **首次打开被拦怎么办**（ad-hoc 签名 + 下载隔离，macOS 15 起「右键 → 打开」已失效）：
+
+          1. 双击 App，等提示被拦，点「完成」
+          2. 打开「系统设置 → 隐私与安全性」，下方「安全性」区点「仍要打开」
+          3. 输密码或 Touch ID，再点「打开」
+
+          或一行命令：\`xattr -dr com.apple.quarantine /Applications/PPT工具箱.app\`
 
           > 仅供学习交流，请勿用于商业用途。" \
             || gh release upload "$GITHUB_REF_NAME" out/*.zip --clobber
