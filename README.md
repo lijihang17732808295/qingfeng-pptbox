@@ -61,6 +61,8 @@ https://github.com/lijihang17732808295/qingfeng-pptbox/releases/latest/download/
 - 首次打开若提示「无法验证开发者」→ 右键 → 打开（只需一次）
 - 或执行：`xattr -dr com.apple.quarantine /Applications/PPT工具箱.app`
 - 首次用「页面图片化」或「自动保存」会弹「想要控制 Microsoft PowerPoint」，点**好**
+- 请用 **Finder 双击解压**（Archive Utility）。个别第三方解压工具会把「工具箱」三个字显示成乱码，
+  这时把 `.app` 改个名字照样能运行，不影响功能
 
 **Windows**：`PPT字体检测器.exe`，双击即用（单文件，无需安装 Python）
 
