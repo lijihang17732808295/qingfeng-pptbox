@@ -75,13 +75,16 @@ jobs:
       - name: 确认 tkinter 可用
         run: |
           set -euo pipefail
-          if python3 -c "import tkinter; print('tkinter', tkinter.TkVersion)"; then
-            echo "PYTHON=$(command -v python3)" >> "$GITHUB_ENV"
-          else
-            echo "::warning::当前 Python 缺少 tkinter，改用 Homebrew 版本"
-            brew install "python@${PY_VERSION}" "python-tk@${PY_VERSION}"
-            echo "PYTHON=$(brew --prefix "python@${PY_VERSION}")/bin/python${PY_VERSION}" >> "$GITHUB_ENV"
-          fi
+          for c in python3 python; do
+            if command -v "$c" >/dev/null 2>&1 && "$c" -c "import tkinter" >/dev/null 2>&1; then
+              echo "PYTHON=$(command -v "$c")" >> "$GITHUB_ENV"
+              "$c" -c "import sys, tkinter; print('Python', sys.version.split()[0], '· Tk', tkinter.TkVersion)"
+              exit 0
+            fi
+          done
+          echo "::warning::setup-python 的 Python 缺少 tkinter，改用 Homebrew 版本"
+          brew install "python@${PY_VERSION}" "python-tk@${PY_VERSION}"
+          echo "PYTHON=$(brew --prefix "python@${PY_VERSION}")/bin/python${PY_VERSION}" >> "$GITHUB_ENV"
 
       # 直接走用户文档里的那一条命令，等于顺带验证脚本本身没坏
       - name: 打包 .app
