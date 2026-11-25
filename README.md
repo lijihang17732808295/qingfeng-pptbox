@@ -113,6 +113,13 @@ bash build_mac.sh
 1. `lint` —— 在便宜的 `ubuntu-latest` 上先 `compileall`，语法错就不用排队等 macOS 机器。
 2. `build` —— 矩阵跑 `macos-14`（Apple Silicon）与 `macos-13`（Intel）。Intel 那条标了 `experimental`，因为 GitHub 随时可能下线旧镜像，它失败不会拖垮整个流程。
 
+**额度提醒**：私有仓库的 macOS runner 按 **10 倍**计费（Linux 1×、Windows 2×），免费额度 2000 分钟实际只够约 200 分钟 macOS。所以默认策略是：
+
+- 日常 push / PR → **只跑 arm64**（约 5 分钟，扣 50 分钟额度）
+- 打 `v*` 标签或手动 Run workflow → **额外跑 x86_64**
+
+要每次都出双架构，把 `build` job 里那条 `if:` 删掉即可。
+
 打包直接调用 `bash build_mac.sh`，等于顺带验证文档里那条命令没坏。打完不是上传就完事，还有一道**产物探针**：
 
 ```bash
