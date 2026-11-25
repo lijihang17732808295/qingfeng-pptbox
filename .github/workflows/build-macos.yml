@@ -2,8 +2,10 @@ name: Build macOS App
 
 # 触发方式：
 #   1. 推送到 main            → 只打 arm64，验证能在 macOS runner 上出 .app
-#   2. 推送 v* 标签（如 v1.07）→ 追加打 x86_64，并创建 Release 附上两个 zip
-#   3. 手动 Run workflow       → 同标签（双架构），不发版
+#   2. 推送 v* 标签（如 v1.07）→ 打 arm64 并创建 Release，附上 zip
+#   3. 手动 Run workflow       → 追加打 x86_64（Intel Mac 兜底），不发版
+#
+# 目标机器只有 Apple Silicon MacBook，所以 arm64 是主线，x86_64 仅按需手动。
 on:
   push:
     branches: [main]
