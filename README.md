@@ -104,7 +104,7 @@ bash build_mac.sh
 | 时机 | 行为 |
 |---|---|
 | 推送到 `main` | 语法检查 + 打包 arm64，产物存为 artifact（保留 30 天） |
-| 推送 `v*` 标签 | 追加打包 x86_64，并创建 Release 挂上两个 zip |
+| 推送 `v*` 标签 | 创建 Release，挂上 arm64 zip |
 | Pull Request | 只验证能不能编译通过 |
 | 手动 Run workflow | 双架构重跑（不发版） |
 
@@ -112,10 +112,12 @@ bash build_mac.sh
 
 1. `lint` —— 在 `ubuntu-latest` 上先 `compileall`，语法错就不用排队等 macOS 机器。
 2. `arm64` —— `macos-15`（Apple Silicon），每次 push 都跑。
-3. `intel` —— `macos-13`（Intel），只在打 tag / 手动触发时跑，且标了 `continue-on-error`。
-4. `release` —— 打 tag 且 arm64 成功时，把两个 zip 挂到 Release。
+3. `intel` —— `macos-13`（Intel），只在手动触发时跑，且标了 `continue-on-error`。
+4. `release` —— 打 tag 且 arm64 成功时创建 Release。
 
 打包步骤抽成了组合动作 `.github/actions/build-mac/action.yml`，两个架构共用一份。
+
+> **Intel 为什么默认不发**：`macos-13` 在部分账号上会长时间排队（实测排队十几分钟不动），放进 tag 流程会把发版拖到 40 分钟超时。需要 x86_64 包时手动 Run workflow，跑完用 `gh release upload <tag> dist/PPT工具箱-mac.zip` 补到已发布的 Release 上。
 
 > **`runs-on` 别写 `macos-14`**：实测该标签在本仓库会被解析成 `macos-14-arm64-us-xl`（XL 规格，需付费套餐），job 在分配机器前就被判掉，报 `The configuration 'macos-14-arm64-us-xl' is not supported`。`macos-15` / `macos-latest` 正常。
 >
