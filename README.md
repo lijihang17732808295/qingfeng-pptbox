@@ -50,16 +50,22 @@
 
 ## 下载使用
 
-到 [Releases](../../releases) 取对应包：
+**macOS（Apple Silicon，M 系列）**：直接下这个，不用登录、不用编译
 
-- **Windows**：`PPT字体检测器.exe`，双击即用（单文件，无需安装 Python）
-- **macOS**：`PPT工具箱-v1.07-macOS-arm64.zip`（M 系列）或 `-x86_64.zip`（Intel）
-
-首次打开若提示「无法验证开发者」，macOS 上右键 → 打开，或执行：
-
-```bash
-xattr -dr com.apple.quarantine /Applications/PPT工具箱.app
 ```
+https://github.com/lijihang17732808295/qingfeng-pptbox/releases/latest/download/PPTToolbox-v1.07-macOS-arm64.zip
+```
+
+解压后把「PPT工具箱.app」拖进「应用程序」即可。
+
+- 首次打开若提示「无法验证开发者」→ 右键 → 打开（只需一次）
+- 或执行：`xattr -dr com.apple.quarantine /Applications/PPT工具箱.app`
+- 首次用「页面图片化」或「自动保存」会弹「想要控制 Microsoft PowerPoint」，点**好**
+
+**Windows**：`PPT字体检测器.exe`，双击即用（单文件，无需安装 Python）
+
+> 2019 年及更早的 **Intel MacBook** 不能跑 arm64 包。这种情况到 Actions 页手动 Run workflow
+> 勾一次 x86_64 构建，跑完用 `gh release upload v1.07 dist/PPT工具箱-mac.zip` 补上传。
 
 ## 从源码运行
 
@@ -139,7 +145,7 @@ dist/PPT工具箱.app/Contents/MacOS/PPT工具箱 --ci
 git tag v1.08 && git push origin v1.08
 ```
 
-Actions 会自动建 Release 并附上两个架构的 zip。手工发版则直接把 `dist/PPT工具箱-mac.zip` 拖进去。
+Actions 会自动建 Release 并附上 arm64 的 zip。手工发版则直接把 `dist/PPT工具箱-mac.zip` 拖进去。
 
 ## 自检
 

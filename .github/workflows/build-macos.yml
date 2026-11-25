@@ -106,7 +106,8 @@ jobs:
             arch=${name##*-}                      # arm64
             src="$d/PPT工具箱-mac.zip"
             [ -f "$src" ] || continue
-            cp "$src" "out/PPT工具箱-${GITHUB_REF_NAME}-macOS-${arch}.zip"
+            # 资产名必须纯 ASCII：gh 上传中文文件名会被吃掉（实测 "PPT工具箱-v1.07…" 变成 "PPT.-v1.07…"）
+            cp "$src" "out/PPTToolbox-${GITHUB_REF_NAME}-macOS-${arch}.zip"
           done
           ls -lh out
           test -n "$(ls -A out)" || { echo "::error::没有可发布的安装包"; exit 1; }
@@ -118,10 +119,7 @@ jobs:
           set -euo pipefail
           gh release create "$GITHUB_REF_NAME" out/*.zip \
             --title "$GITHUB_REF_NAME" \
-            --notes "macOS 版安装包。下载对应的架构：
-
-          - Apple Silicon（M1/M2/M3/M4）→ \`arm64\`
-          - Intel → \`x86_64\`
+            --notes "macOS 版安装包，适用于所有 Apple Silicon MacBook（M1 及以后）。
 
           解压后把「PPT工具箱.app」拖进「应用程序」。首次打开若提示「无法验证开发者」，
           右键 → 打开；或执行 \`xattr -dr com.apple.quarantine /Applications/PPT工具箱.app\`。
