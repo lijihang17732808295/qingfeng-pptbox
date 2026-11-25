@@ -1,0 +1,72 @@
+name: 打包 macOS .app
+description: >-
+  装入依赖 → 生成 .icns → PyInstaller 打包 → ad-hoc 签名 → 产物探针 → 上传 artifact。
+  抽成组合动作是因为 arm64 与 x86_64 两个 job 要跑同一套步骤，
+  而 job 级 if 里不能用 matrix 上下文（GitHub 在展开矩阵前就求值了）。
+
+inputs:
+  arch:
+    description: 架构标签，只用于 artifact 命名（arm64 / x86_64）
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+        cache: pip
+        cache-dependency-path: requirements-mac.txt
+
+    # PyInstaller 打窗口程序必须有 tkinter。setup-python 的 macOS 构建一般自带，
+    # 万一没有就退回 Homebrew 版本（python-tk 是独立 formula，要单独装）
+    - name: 确认 tkinter 可用
+      shell: bash
+      run: |
+        set -euo pipefail
+        for c in python3 python; do
+          if command -v "$c" >/dev/null 2>&1 && "$c" -c "import tkinter" >/dev/null 2>&1; then
+            echo "PYTHON=$(command -v "$c")" >> "$GITHUB_ENV"
+            "$c" -c "import sys, tkinter; print('Python', sys.version.split()[0], '· Tk', tkinter.TkVersion)"
+            exit 0
+          fi
+        done
+        echo "::warning::setup-python 的 Python 缺少 tkinter，改用 Homebrew 版本"
+        brew install "python@3.12" "python-tk@3.12"
+        echo "PYTHON=$(brew --prefix "python@3.12")/bin/python3.12" >> "$GITHUB_ENV"
+
+    # 直接走文档里那一条命令，等于顺带验证脚本本身没坏
+    - name: 打包 .app
+      shell: bash
+      run: bash build_mac.sh
+
+    - name: 校验产物
+      shell: bash
+      env:
+        CI_REPORT: ${{ runner.temp }}/ci-probe.txt
+      run: |
+        set -euo pipefail
+        APP="dist/${APP_NAME}.app"
+        BIN="${APP}/Contents/MacOS/${APP_NAME}"
+
+        test -d "$APP" || { echo "::error::没有生成 $APP"; exit 1; }
+        test -x "$BIN" || { echo "::error::可执行文件缺失：$BIN"; exit 1; }
+
+        # ad-hoc 签名校验（CI 里没有开发者证书，不做公证）
+        codesign --verify --deep --strict "$APP"
+
+        # 在真实产物上跑一次探针：资源释放、路径解析、字体目录、内嵌样本
+        echo "—— 打包产物自检 ——"
+        "$BIN" --ci || status=$?
+        cat "$CI_REPORT" || true
+        [ "${status:-0}" -eq 0 ] || { echo "::error::产物自检未通过"; exit 1; }
+
+        du -sh "$APP"
+        ls -lh dist
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: PPT-Toolbox-macOS-${{ inputs.arch }}
+        path: dist/PPT工具箱-mac.zip
+        if-no-files-found: error
+        retention-days: 30

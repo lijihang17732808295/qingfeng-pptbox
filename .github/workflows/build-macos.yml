@@ -1,9 +1,9 @@
 name: Build macOS App
 
 # 触发方式：
-#   1. 推送到 main            → 跑一遍，验证能在 macOS runner 上打出 .app
-#   2. 推送 v* 标签（如 v1.07）→ 额外创建 Release 并附上 zip
-#   3. 手动 Run workflow       → 随时重跑
+#   1. 推送到 main            → 只打 arm64，验证能在 macOS runner 上出 .app
+#   2. 推送 v* 标签（如 v1.07）→ 追加打 x86_64，并创建 Release 附上两个 zip
+#   3. 手动 Run workflow       → 同标签（双架构），不发版
 on:
   push:
     branches: [main]
@@ -14,7 +14,7 @@ on:
   pull_request:
   workflow_dispatch:
 
-# 同一分支连续推送时，只保留最新一次，避免排队烧时长
+# 同一分支连续推送时只保留最新一次，避免排队烧额度
 concurrency:
   group: macos-${{ github.ref }}
   cancel-in-progress: true
@@ -23,7 +23,6 @@ permissions:
   contents: write
 
 env:
-  PY_VERSION: '3.12'
   APP_NAME: PPT工具箱
 
 jobs:
@@ -37,7 +36,7 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: ${{ env.PY_VERSION }}
+          python-version: '3.12'
 
       - name: 编译全部模块
         run: |
@@ -45,95 +44,43 @@ jobs:
           echo "全部 .py 语法通过"
 
   # ---------------------------------------------------------------- 打包
-  build:
-    name: 打包 ${{ matrix.arch }}
+  # 拆成两个 job 而不是用 matrix：job 级 if 里拿不到 matrix 上下文
+  # （GitHub 在展开矩阵之前就求值了），而 Intel 只在特定情况下构建。
+  arm64:
+    name: 打包 arm64
     needs: lint
-    runs-on: ${{ matrix.runner }}
+    runs-on: macos-14          # Apple Silicon（M1 起）
     timeout-minutes: 40
-    # Intel 只在打 tag / 手动触发时构建：
-    #   macOS runner 按 10 倍计费，日常 push 两个架构一起跑太费额度，
-    #   而且 macos-13 是最抢手的镜像，排队最久。
-    if: >-
-      matrix.experimental == false
-      || startsWith(github.ref, 'refs/tags/v')
-      || github.event_name == 'workflow_dispatch'
-    # macos-13（Intel）随时可能被 GitHub 下线，允许它失败而不拖垮整个流程
-    continue-on-error: ${{ matrix.experimental }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - runner: macos-14      # Apple Silicon（M1 起）
-            arch: arm64
-            experimental: false
-          - runner: macos-13      # Intel（x86_64）
-            arch: x86_64
-            experimental: true
     steps:
       - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
+      - uses: ./.github/actions/build-mac
         with:
-          python-version: ${{ env.PY_VERSION }}
-          cache: pip
-          cache-dependency-path: requirements-mac.txt
+          arch: arm64
 
-      # PyInstaller 打窗口程序必须有 tkinter。setup-python 的 macOS 构建一般自带，
-      # 万一没有就退回 Homebrew 版本（python-tk 是独立 formula，要单独装）
-      - name: 确认 tkinter 可用
-        run: |
-          set -euo pipefail
-          for c in python3 python; do
-            if command -v "$c" >/dev/null 2>&1 && "$c" -c "import tkinter" >/dev/null 2>&1; then
-              echo "PYTHON=$(command -v "$c")" >> "$GITHUB_ENV"
-              "$c" -c "import sys, tkinter; print('Python', sys.version.split()[0], '· Tk', tkinter.TkVersion)"
-              exit 0
-            fi
-          done
-          echo "::warning::setup-python 的 Python 缺少 tkinter，改用 Homebrew 版本"
-          brew install "python@${PY_VERSION}" "python-tk@${PY_VERSION}"
-          echo "PYTHON=$(brew --prefix "python@${PY_VERSION}")/bin/python${PY_VERSION}" >> "$GITHUB_ENV"
-
-      # 直接走用户文档里的那一条命令，等于顺带验证脚本本身没坏
-      - name: 打包 .app
-        run: bash build_mac.sh
-
-      - name: 校验产物
-        env:
-          CI_REPORT: ${{ runner.temp }}/ci-probe.txt
-        run: |
-          set -euo pipefail
-          APP="dist/${APP_NAME}.app"
-          BIN="${APP}/Contents/MacOS/${APP_NAME}"
-
-          test -d "$APP" || { echo "::error::没有生成 $APP"; exit 1; }
-          test -x "$BIN" || { echo "::error::可执行文件缺失：$BIN"; exit 1; }
-
-          # ad-hoc 签名校验（不验证公证，CI 里没有开发者证书）
-          codesign --verify --deep --strict "$APP"
-
-          # 在真实产物上跑一次探针：资源释放、路径解析、字体目录、内嵌样本
-          echo "—— 打包产物自检 ——"
-          "$BIN" --ci || status=$?
-          cat "$CI_REPORT" || true
-          [ "${status:-0}" -eq 0 ] || { echo "::error::产物自检未通过"; exit 1; }
-
-          du -sh "$APP"
-          ls -lh dist
-
-      - uses: actions/upload-artifact@v4
+  # Intel 只在打 tag / 手动触发时构建：macOS runner 按 10 倍计费，
+  # 日常 push 跑双架构太费额度，而且 macos-13 是排队最久的镜像。
+  intel:
+    name: 打包 x86_64
+    needs: lint
+    runs-on: macos-13          # Intel
+    timeout-minutes: 40
+    continue-on-error: true    # 旧镜像随时可能下线，不拖垮整个流程
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/build-mac
         with:
-          name: PPT-Toolbox-macOS-${{ matrix.arch }}
-          path: dist/PPT工具箱-mac.zip
-          if-no-files-found: error
-          retention-days: 30
+          arch: x86_64
 
   # ---------------------------------------------------------------- 发布
-  # 只有打 v* 标签才走这里，把两个架构的 zip 挂到 Release
   release:
     name: 发布 Release
-    needs: build
-    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [arm64, intel]
+    # always() 是必须的：intel 在非 tag 时被 skip，不加它这里也会跟着跳过
+    if: >-
+      always()
+      && startsWith(github.ref, 'refs/tags/v')
+      && needs.arm64.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
