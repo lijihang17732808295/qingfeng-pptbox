@@ -3,7 +3,7 @@
 > 字体检测 · 页面图片化 · 定时自动保存 —— 一个不用装 Office 也能查 PPT 字体的桌面小工具。
 > Windows 打包成 `.exe`，macOS 打包成 `.app`，界面与功能共用同一份代码。
 
-[![Build macOS App](https://github.com/OWNER/REPO/actions/workflows/build-macos.yml/badge.svg)](https://github.com/OWNER/REPO/actions/workflows/build-macos.yml)
+[![Build macOS App](https://github.com/lijihang17732808295/qingfeng-pptbox/actions/workflows/build-macos.yml/badge.svg)](https://github.com/lijihang17732808295/qingfeng-pptbox/actions/workflows/build-macos.yml)
 ![Version](https://img.shields.io/badge/version-1.07-blue)
 ![Python](https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-3776ab?logo=python&logoColor=white)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-lightgrey)
