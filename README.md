@@ -103,22 +103,25 @@ bash build_mac.sh
 
 | 时机 | 行为 |
 |---|---|
-| 推送到 `main` | 跑语法检查 + 两个架构打包，产物存为 artifact（保留 30 天） |
-| 推送 `v*` 标签 | 额外创建 Release，挂上 arm64 与 x86_64 两个 zip |
+| 推送到 `main` | 语法检查 + 打包 arm64，产物存为 artifact（保留 30 天） |
+| 推送 `v*` 标签 | 追加打包 x86_64，并创建 Release 挂上两个 zip |
 | Pull Request | 只验证能不能编译通过 |
-| 手动 Run workflow | 随时重跑 |
+| 手动 Run workflow | 双架构重跑（不发版） |
 
-**两个 job 的分工**
+**job 的分工**
 
-1. `lint` —— 在便宜的 `ubuntu-latest` 上先 `compileall`，语法错就不用排队等 macOS 机器。
-2. `build` —— 矩阵跑 `macos-14`（Apple Silicon）与 `macos-13`（Intel）。Intel 那条标了 `experimental`，因为 GitHub 随时可能下线旧镜像，它失败不会拖垮整个流程。
+1. `lint` —— 在 `ubuntu-latest` 上先 `compileall`，语法错就不用排队等 macOS 机器。
+2. `arm64` —— `macos-15`（Apple Silicon），每次 push 都跑。
+3. `intel` —— `macos-13`（Intel），只在打 tag / 手动触发时跑，且标了 `continue-on-error`。
+4. `release` —— 打 tag 且 arm64 成功时，把两个 zip 挂到 Release。
 
-**额度提醒**：私有仓库的 macOS runner 按 **10 倍**计费（Linux 1×、Windows 2×），免费额度 2000 分钟实际只够约 200 分钟 macOS。所以默认策略是：
+打包步骤抽成了组合动作 `.github/actions/build-mac/action.yml`，两个架构共用一份。
 
-- 日常 push / PR → **只跑 arm64**（约 5 分钟，扣 50 分钟额度）
-- 打 `v*` 标签或手动 Run workflow → **额外跑 x86_64**
+> **`runs-on` 别写 `macos-14`**：实测该标签在本仓库会被解析成 `macos-14-arm64-us-xl`（XL 规格，需付费套餐），job 在分配机器前就被判掉，报 `The configuration 'macos-14-arm64-us-xl' is not supported`。`macos-15` / `macos-latest` 正常。
+>
+> 顺便记一条排查经验：run **0 秒失败、一个 job 都没创建**，说明工作流整份被判无效（常见于 job 级 `if` 里用了 `matrix`——它在矩阵展开前求值，拿不到 `matrix` 上下文）；run 有 job 但秒挂、`runner_name` 为空，则是 runner 标签不可用。
 
-要每次都出双架构，把 `build` job 里那条 `if:` 删掉即可。
+**额度**：公开仓库的 Actions 完全免费、不限分钟，所以这里不用为省钱做妥协。私有仓库则要小心——macOS runner 按 **10 倍**计费，2000 分钟免费额度实际只够约 200 分钟 macOS。
 
 打包直接调用 `bash build_mac.sh`，等于顺带验证文档里那条命令没坏。打完不是上传就完事，还有一道**产物探针**：
 
