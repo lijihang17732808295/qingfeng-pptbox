@@ -1,0 +1,7 @@
+# macOS 版运行/打包依赖
+# 在 Mac 上：python3 -m pip install -r requirements-mac.txt
+
+Pillow>=10.0
+python-pptx>=0.6.23
+PyMuPDF>=1.23          # PPT → PDF → PNG 的渲染（LibreOffice 方案需要）
+pyinstaller>=6.0

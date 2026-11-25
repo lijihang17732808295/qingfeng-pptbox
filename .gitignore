@@ -1,0 +1,30 @@
+# 虚拟环境（Windows / macOS 各一份）
+.venv/
+.venv-mac/
+venv/
+
+# PyInstaller 产物
+build/
+dist/
+*.manifest.bak
+
+# Python 缓存
+__pycache__/
+*.py[cod]
+*$py.class
+
+# macOS 打包中间物
+app.icns
+icon.iconset/
+*.dmg
+
+# 运行时产生的日志与备份
+*.log
+crash.log
+*.bak
+
+# 编辑器 / 系统
+.DS_Store
+.idea/
+.vscode/
+*.swp

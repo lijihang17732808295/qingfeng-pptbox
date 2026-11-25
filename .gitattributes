@@ -1,0 +1,13 @@
+# 统一换行：脚本必须 LF，否则拷到 macOS 上会报 bad interpreter
+* text=auto
+*.sh text eol=lf
+*.py text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.md text eol=lf
+
+# 二进制资源
+*.pptx binary
+*.png binary
+*.ico binary
+*.icns binary
